@@ -1,0 +1,63 @@
+{
+  "$schema": "https://patch.gg/schemas/recipe/v1.json",
+  "test": {
+    "checks": [
+      "assets-loaded",
+      "scene-rendered",
+      "hud-updated",
+      "wave-started",
+      "cannon-fired",
+      "enemy-hit",
+      "missile-launched",
+      "enemy-destroyed"
+    ],
+    "move_keys": [
+      "KeyW",
+      "ArrowUp"
+    ]
+  },
+  "credits": [
+    {
+      "files": "assets/patch/scenario_asset_AFJ7WNJT3rSULDLBwTXmqD7U/",
+      "license": "CC-BY-4.0",
+      "source": "https://huggingface.co/datasets/scenario-labs/3d-collection/blob/55b4c002b4c1529fc48da3dff98516c3069bfa3f/assets/scenario_asset_AFJ7WNJT3rSULDLBwTXmqD7U/output.glb",
+      "author": "Scenario"
+    },
+    {
+      "files": "assets/patch/scenario_12162a48873f808d/",
+      "license": "CC-BY-4.0",
+      "source": "https://huggingface.co/datasets/scenario-labs/3d-collection/blob/55b4c002b4c1529fc48da3dff98516c3069bfa3f/assets/12162a48873f808d/0e72556a81c774f2.glb",
+      "author": "Scenario"
+    },
+    {
+      "files": "assets/patch/polyhaven_coast_line_01/",
+      "license": "CC0-1.0",
+      "source": "https://polyhaven.com/a/coast_line_01",
+      "author": "Rob Tuytel, Rico Cilliers"
+    },
+    {
+      "files": "assets/patch/polyhaven_kloofendal_43d_clear_puresky/",
+      "license": "CC0-1.0",
+      "source": "https://polyhaven.com/a/kloofendal_43d_clear_puresky",
+      "author": "Greg Zaal"
+    },
+    {
+      "files": "assets/patch/polyhaven_aerial_grass_rock/",
+      "license": "CC0-1.0",
+      "source": "https://polyhaven.com/a/aerial_grass_rock",
+      "author": "Rob Tuytel"
+    },
+    {
+      "files": "assets/patch/polyhaven_aerial_rocks_02/",
+      "license": "CC0-1.0",
+      "source": "https://polyhaven.com/a/aerial_rocks_02",
+      "author": "Rob Tuytel"
+    },
+    {
+      "files": "assets/patch/polyhaven_aerial_beach_01/",
+      "license": "CC0-1.0",
+      "source": "https://polyhaven.com/a/aerial_beach_01",
+      "author": "Rob Tuytel"
+    }
+  ]
+}

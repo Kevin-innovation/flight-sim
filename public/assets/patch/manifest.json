@@ -1,0 +1,172 @@
+{
+  "generated": "2026-11-14T05:52:41.932Z",
+  "source": "https://patch.gg/api/v1",
+  "assets": {
+    "jetPlayer": {
+      "id": "scenario:asset_AFJ7WNJT3rSULDLBwTXmqD7U",
+      "title": "Orange fighter jet",
+      "variant": "web-lod1",
+      "type": "model",
+      "license": "CC-BY-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "ai": true,
+      "facts": {
+        "triangles": 178200
+      },
+      "dims": [
+        1.9147,
+        0.6528,
+        1.5568
+      ],
+      "files": {
+        "model": "assets/patch/scenario_asset_AFJ7WNJT3rSULDLBwTXmqD7U/web-lod1/orange_fighter_jet.lod1.glb",
+        "modelSha256": "9325fad68fde276c9fa19ee0d3653a94c766bb57f9b659a8d9fdf68305391c35"
+      }
+    },
+    "jetEnemy": {
+      "id": "scenario:asset_AFJ7WNJT3rSULDLBwTXmqD7U",
+      "title": "Orange fighter jet",
+      "variant": "web-lod2",
+      "type": "model",
+      "license": "CC-BY-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "ai": true,
+      "facts": {
+        "triangles": 71280
+      },
+      "dims": [
+        1.9147,
+        0.6528,
+        1.5568
+      ],
+      "files": {
+        "model": "assets/patch/scenario_asset_AFJ7WNJT3rSULDLBwTXmqD7U/web-lod2/orange_fighter_jet.lod2.glb",
+        "modelSha256": "f820dedc01a2a6d7f9240978ded086d2e96ef2c9967ca5688ec706a5e6324150"
+      }
+    },
+    "propEnemy": {
+      "id": "scenario:12162a48873f808d",
+      "title": "Red vintage fighter plane",
+      "variant": "web-lod1",
+      "type": "model",
+      "license": "CC-BY-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "ai": true,
+      "facts": {
+        "triangles": 42195
+      },
+      "dims": [
+        0.5475,
+        0.1694,
+        0.3565
+      ],
+      "files": {
+        "model": "assets/patch/scenario_12162a48873f808d/web-lod1/red_vintage_fighter_plane.lod1.glb",
+        "modelSha256": "3abf769368e7dfbbedcb1fe6c8542a1b15af7dc74b3e785268a7d65a16e90d9b"
+      }
+    },
+    "coast": {
+      "id": "polyhaven:coast_line_01",
+      "title": "Coast Line 01",
+      "variant": "web-lod2",
+      "type": "model",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "ai": false,
+      "facts": {
+        "triangles": 64721
+      },
+      "dims": [
+        54.612,
+        2.634,
+        42.964
+      ],
+      "files": {
+        "model": "assets/patch/polyhaven_coast_line_01/web-lod2/coast_line_01_lod2.glb",
+        "modelSha256": "921eaf14df543e91f50c8517c49e9dc6eb4ac43ed7161df4f31308892b303313"
+      }
+    },
+    "sky": {
+      "id": "polyhaven:kloofendal_43d_clear_puresky",
+      "title": "Kloofendal 43d Clear (Pure Sky)",
+      "variant": "web",
+      "type": "hdri",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "ai": false,
+      "facts": {
+        "texture_px": 1024
+      },
+      "dims": null,
+      "files": {
+        "environment": "assets/patch/polyhaven_kloofendal_43d_clear_puresky/web/kloofendal_43d_clear_puresky_1k.hdr",
+        "environmentSha256": "2561533d00e8c89fc14f92e48df9cbd5ac1d1f3caa4094ab0befa99419056242",
+        "background": "assets/patch/polyhaven_kloofendal_43d_clear_puresky/web/kloofendal_43d_clear_puresky_background.jpg",
+        "backgroundSha256": "7780020b21692b2f6ec12fc490a150fe893c3809bb8899457ebde38a23994370"
+      }
+    },
+    "matGrass": {
+      "id": "polyhaven:aerial_grass_rock",
+      "title": "Aerial Grass Rock",
+      "variant": "web",
+      "type": "material",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "ai": false,
+      "facts": {
+        "texture_px": 1024
+      },
+      "dims": null,
+      "files": {
+        "baseColor": "assets/patch/polyhaven_aerial_grass_rock/web/aerial_grass_rock_baseColor.jpg",
+        "baseColorSha256": "568c094b5e93543e780f40e514d4e2033c7a3b3a896bda0834f1ef5f394eb4cc",
+        "normal": "assets/patch/polyhaven_aerial_grass_rock/web/aerial_grass_rock_normal.jpg",
+        "normalSha256": "b361f4b0e606024ac8eba01d662f55281839df2c976c33cfb45a7503306b7d79",
+        "arm": "assets/patch/polyhaven_aerial_grass_rock/web/aerial_grass_rock_arm.jpg",
+        "armSha256": "3d263365ee823736d53105722c6dc79a745f0bbc6e9edd9915c0cb911f2e1a74"
+      }
+    },
+    "matRock": {
+      "id": "polyhaven:aerial_rocks_02",
+      "title": "Aerial Rocks 02",
+      "variant": "web",
+      "type": "material",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "ai": false,
+      "facts": {
+        "texture_px": 1024
+      },
+      "dims": null,
+      "files": {
+        "baseColor": "assets/patch/polyhaven_aerial_rocks_02/web/aerial_rocks_02_baseColor.jpg",
+        "baseColorSha256": "96c52432d38302764e788afcb0be983bda7529b7b4dc3e6f20273f8ee090fe78",
+        "normal": "assets/patch/polyhaven_aerial_rocks_02/web/aerial_rocks_02_normal.jpg",
+        "normalSha256": "20493711e0e812fd2f24c9c13c002149aca35df4fae595b67573b3223d190fa2",
+        "arm": "assets/patch/polyhaven_aerial_rocks_02/web/aerial_rocks_02_arm.jpg",
+        "armSha256": "4c5db9765e22dea30f520fbf3415be8b3eec8bc9c3cb472d325e96efe6f30a2e"
+      }
+    },
+    "matSand": {
+      "id": "polyhaven:aerial_beach_01",
+      "title": "Aerial Beach 01",
+      "variant": "web",
+      "type": "material",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "ai": false,
+      "facts": {
+        "texture_px": 1024
+      },
+      "dims": null,
+      "files": {
+        "baseColor": "assets/patch/polyhaven_aerial_beach_01/web/aerial_beach_01_baseColor.jpg",
+        "baseColorSha256": "4a687db47c4db9bff481c43f7192c0ca8a4b1fe7358d4c7bb6956f58496eab54",
+        "normal": "assets/patch/polyhaven_aerial_beach_01/web/aerial_beach_01_normal.jpg",
+        "normalSha256": "4967e8c56e4c64b241c030c865ef946481c25bc6d0f8ac492b5bbed6c7765167",
+        "arm": "assets/patch/polyhaven_aerial_beach_01/web/aerial_beach_01_arm.jpg",
+        "armSha256": "c6b695031c2cfa57701fb2b4911e13d2b74b6f975923e41a948aca7598402443"
+      }
+    }
+  }
+}

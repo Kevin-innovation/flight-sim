@@ -1,0 +1,65 @@
+[
+  {
+    "title": "Orange fighter jet",
+    "by": "Scenario",
+    "source": "Scenario",
+    "license": "CC-BY-4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "url": "https://huggingface.co/datasets/scenario-labs/3d-collection/blob/55b4c002b4c1529fc48da3dff98516c3069bfa3f/assets/scenario_asset_AFJ7WNJT3rSULDLBwTXmqD7U/output.glb",
+    "ai": true
+  },
+  {
+    "title": "Red vintage fighter plane",
+    "by": "Scenario",
+    "source": "Scenario",
+    "license": "CC-BY-4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "url": "https://huggingface.co/datasets/scenario-labs/3d-collection/blob/55b4c002b4c1529fc48da3dff98516c3069bfa3f/assets/12162a48873f808d/0e72556a81c774f2.glb",
+    "ai": true
+  },
+  {
+    "title": "Coast Line 01",
+    "by": "Rob Tuytel, Rico Cilliers",
+    "source": "Poly Haven",
+    "license": "CC0-1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "url": "https://polyhaven.com/a/coast_line_01",
+    "ai": false
+  },
+  {
+    "title": "Kloofendal 43d Clear (Pure Sky)",
+    "by": "Greg Zaal",
+    "source": "Poly Haven",
+    "license": "CC0-1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "url": "https://polyhaven.com/a/kloofendal_43d_clear_puresky",
+    "ai": false
+  },
+  {
+    "title": "Aerial Grass Rock",
+    "by": "Rob Tuytel",
+    "source": "Poly Haven",
+    "license": "CC0-1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "url": "https://polyhaven.com/a/aerial_grass_rock",
+    "ai": false
+  },
+  {
+    "title": "Aerial Rocks 02",
+    "by": "Rob Tuytel",
+    "source": "Poly Haven",
+    "license": "CC0-1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "url": "https://polyhaven.com/a/aerial_rocks_02",
+    "ai": false
+  },
+  {
+    "title": "Aerial Beach 01",
+    "by": "Rob Tuytel",
+    "source": "Poly Haven",
+    "license": "CC0-1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "url": "https://polyhaven.com/a/aerial_beach_01",
+    "ai": false
+  }
+]

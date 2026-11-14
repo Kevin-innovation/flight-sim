@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#04121f" />
+    <link rel="icon" href="data:," />
+    <title>SKYWARD: IRON HORIZON</title>
+    <link rel="stylesheet" href="./src/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="game"></canvas>
+
+      <!-- In-flight HUD -->
+      <div id="hud" class="hidden" aria-hidden="true">
+        <div class="hud-top">
+          <div class="hud-chip"><span class="lbl">WAVE</span><b id="h-wave">1/5</b></div>
+          <div class="hud-chip"><span class="lbl">SCORE</span><b id="h-score">0</b></div>
+          <div class="hud-chip"><span class="lbl">KILLS</span><b id="h-kills">0</b></div>
+          <div class="hud-chip"><span class="lbl">적기</span><b id="h-left">0</b></div>
+        </div>
+        <div class="hud-heading"><div id="h-heading-tape"></div><b id="h-heading">000</b></div>
+        <div class="tape tape-left">
+          <span class="lbl">SPD km/h</span><b id="h-speed">0</b>
+          <div class="bar v"><i id="h-boost"></i></div><span class="lbl small">BOOST</span>
+        </div>
+        <div class="tape tape-right">
+          <span class="lbl">ALT m</span><b id="h-alt">0</b>
+          <span class="lbl small" id="h-agl">AGL 0</span>
+        </div>
+        <div id="h-message" class="hud-message"></div>
+        <div id="h-warning" class="hud-warning"></div>
+        <div id="h-killfeed" class="killfeed"></div>
+        <div class="hud-bottom">
+          <div class="panel health">
+            <span class="lbl">기체 내구도</span>
+            <div class="bar"><i id="h-health"></i></div>
+            <b id="h-health-num">100</b>
+          </div>
+          <div class="panel weapons">
+            <div><span class="lbl">GUN</span><b id="h-ammo">900</b><div class="bar heat"><i id="h-heat"></i></div></div>
+            <div><span class="lbl">MSL</span><b id="h-msl">8</b><span id="h-lock" class="lock">—</span></div>
+            <div class="target"><span class="lbl">TGT</span><b id="h-tgt">—</b></div>
+          </div>
+          <div class="radar-wrap"><canvas id="radar" width="200" height="200"></canvas><span class="lbl radar-lbl">RADAR 3.2km</span></div>
+        </div>
+        <button id="btn-pause" class="hud-btn pause-btn" aria-label="일시정지">II</button>
+        <div id="h-loading" class="hud-loading"></div>
+      </div>
+
+      <!-- Touch controls -->
+      <div id="touch" class="hidden">
+        <div id="stick" class="stick"><div class="stick-knob"></div></div>
+        <div class="touch-buttons">
+          <button data-act="fire" class="tbtn fire">GUN</button>
+          <button data-act="missile" class="tbtn msl">MSL</button>
+          <button data-act="boost" class="tbtn boost">BST</button>
+          <button data-act="target" class="tbtn small">TGT</button>
+          <button data-act="camera" class="tbtn small">CAM</button>
+        </div>
+      </div>
+
+      <!-- Screens -->
+      <section id="screen-title" class="screen active">
+        <div class="title-block">
+          <div class="eyebrow">NAVAL AIR COMBAT</div>
+          <h1>SKYWARD<span>IRON HORIZON</span></h1>
+          <p class="tag">함대 상공을 지켜라. 다섯 개의 적 편대가 아이언 호라이즌 제도로 진입한다.</p>
+          <div class="menu" role="menu">
+            <button class="mbtn primary" data-action="briefing">출격 준비</button>
+            <button class="mbtn" data-action="controls">조작법</button>
+            <button class="mbtn" data-action="credits">크레딧</button>
+            <button class="mbtn" data-action="audio" id="btn-audio">사운드: 켜짐</button>
+          </div>
+          <div class="best">최고 기록 <b id="best-score">0</b></div>
+          <div class="loading-line"><span id="load-label">에셋 로딩 중…</span><div class="bar"><i id="load-bar"></i></div></div>
+          <div class="hint" id="title-hint">Enter / 하단 버튼으로 선택</div>
+        </div>
+      </section>
+
+      <section id="screen-briefing" class="screen">
+        <div class="card">
+          <div class="eyebrow">작전 브리핑 · OPERATION IRON HORIZON</div>
+          <h2>제공권 확보</h2>
+          <ul class="brief">
+            <li><b>목표</b> 5개 적 편대를 전멸시키고 제도 상공의 제공권을 확보한다.</li>
+            <li><b>위협</b> RAPTOR 제트 편대(3웨이브부터 미사일 탑재)와 BANDIT 프로펠러 전투기.</li>
+            <li><b>무장</b> 기관포 900발 · 유도 미사일 8기. 웨이브 사이 재무장·수리.</li>
+            <li><b>주의</b> 해면·지면 충돌, 작전 구역(반경 4.2km) 이탈 시 손상.</li>
+          </ul>
+          <div class="menu row">
+            <button class="mbtn primary" data-action="start">출격</button>
+            <button class="mbtn" data-action="back">뒤로</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="screen-controls" class="screen">
+        <div class="card">
+          <div class="eyebrow">조작법</div>
+          <h2 id="controls-title">키보드</h2>
+          <table class="keys" id="controls-table"></table>
+          <div class="menu row"><button class="mbtn primary" data-action="back">뒤로</button></div>
+        </div>
+      </section>
+
+      <section id="screen-credits" class="screen">
+        <div class="card">
+          <div class="eyebrow">CREDITS · 에셋 라이선스</div>
+          <h2>크레딧</h2>
+          <div id="credits-list" class="credits"></div>
+          <div class="menu row"><button class="mbtn primary" data-action="back">뒤로</button></div>
+        </div>
+      </section>
+
+      <section id="screen-pause" class="screen overlay">
+        <div class="card">
+          <div class="eyebrow">일시정지</div>
+          <h2>PAUSED</h2>
+          <div class="menu">
+            <button class="mbtn primary" data-action="resume">계속</button>
+            <button class="mbtn" data-action="restart">재시작</button>
+            <button class="mbtn" data-action="audio" data-audio>사운드: 켜짐</button>
+            <button class="mbtn" data-action="quit">타이틀로</button>
+          </div>
+          <div class="hint">P / 스타트 버튼으로 재개</div>
+        </div>
+      </section>
+
+      <section id="screen-result" class="screen overlay">
+        <div class="card">
+          <div class="eyebrow" id="result-eyebrow">MISSION FAILED</div>
+          <h2 id="result-title">격추됨</h2>
+          <div class="stats">
+            <div><span>점수</span><b id="r-score">0</b></div>
+            <div><span>격추</span><b id="r-kills">0</b></div>
+            <div><span>도달 웨이브</span><b id="r-wave">1</b></div>
+            <div><span>명중률</span><b id="r-acc">0%</b></div>
+            <div><span>최고 기록</span><b id="r-best">0</b></div>
+          </div>
+          <div id="r-newbest" class="newbest hidden">NEW BEST!</div>
+          <div class="menu row">
+            <button class="mbtn primary" data-action="restart">재출격</button>
+            <button class="mbtn" data-action="quit">타이틀로</button>
+          </div>
+        </div>
+      </section>
+    </div>
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>

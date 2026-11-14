@@ -22,6 +22,31 @@ The Patch asset files live in `public/assets/patch/`. `npm run assets` downloads
 
 ## Controls
 
+### Desktop control presets
+
+Choose a preset on the 조작 설정 screen, either before flying (title → 조작법) or during flight (pause → 조작 설정). The preset, mouse sensitivity (0.2–3) and Y-invert are saved in localStorage under `skyward.controls`. The HUD shows the active preset.
+
+| Preset | Mouse | Flying the aircraft |
+| --- | --- | --- |
+| **마우스 조준 (Mouse aim, default)** | Moving the mouse rotates a persistent world-space aim direction. The camera looks along it, and a white aim ring is drawn separately from the cyan gun cross. Mouse up raises the aim unless Y-invert is on. | The aircraft banks and pulls until its nose matches the aim. When the mouse stops, the jet settles on that heading and does not keep turning. The aim stays within 80° of the nose. A/D (roll), Q/E (yaw) and W/S (pitch) override it when pressed. |
+| **키보드 클래식 (Keyboard classic)** | Buttons and wheel only. | WASD/arrows for pitch and roll, Q/E for yaw, chase camera. |
+| **자유 시점 (Free look)** | Rotates only the camera around the jet: ±150° yaw, −45°/+60° pitch. The view recentres 2.5 s after the mouse stops. | Keyboard, gamepad or touch only. The mouse never steers the aircraft. |
+
+Mouse buttons do the same thing in every preset, but only during active play:
+
+- **Left (hold):** cannon, firing continuously.
+- **Right (press):** one missile.
+- **Middle (press):** next target.
+- **Wheel:** chase-camera distance, between 0.6× and 2.2×.
+
+The right-click menu and middle-click autoscroll are blocked only on the game canvas, and only while you are playing.
+
+In the mouse presets, the **first click only captures the mouse**: it requests pointer lock and never fires. If the browser denies pointer lock, the game falls back to the change in absolute cursor position, so holding the cursor still keeps the aim still. Losing pointer lock, or the window losing focus, pauses the game and releases the trigger. Pointer lock is never requested automatically, whether by tests, a gamepad or touch.
+
+Settings sliders and checkboxes keep their native keyboard behaviour. Arrow keys on them neither move menu focus nor roll the jet.
+
+### Keyboard, gamepad and touch
+
 | Action | Keyboard | Gamepad | Touch |
 | --- | --- | --- | --- |
 | Pitch / roll | W S A D / arrows | left stick | stick |
@@ -42,6 +67,7 @@ Esc belongs to the Patch overlay. The game also pauses when the window loses foc
 - `src/engine/flight.js`: the flight model. `ai.js`: enemy AI. `terrain.js`: procedural islands shared by physics and rendering.
 - `src/engine/render.js`: terrain material blending, ocean shader, clouds, particles, tracers.
 - `src/engine/hud.js`: the in-world HUD overlay. `input.js`: keyboard, gamepad and touch. `camera.js`: chase camera.
+- `src/engine/controls.js`: the three desktop presets (`ControlScheme`, `MouseButtons`, wheel zoom, settings). It is pure, with no DOM, so it can be unit tested.
 - `src/main.js`, `src/style.css`, `index.html`: screens, HUD binding, radar and touch UI.
 - `tests/`: Vitest tests for the simulation.
 

@@ -8,6 +8,7 @@ const AMBER = 'rgba(255, 184, 64, 0.95)';
 const AMBER_DIM = 'rgba(255, 184, 64, 0.55)';
 const RED = 'rgba(255, 70, 60, 0.95)';
 const _v = new Vector3();
+const _v2 = new Vector3();
 
 export class HudOverlay {
   constructor(container) {
@@ -53,15 +54,22 @@ export class HudOverlay {
     g.font = `${Math.round(12 * Math.max(scale, 0.85))}px "Rajdhani", "Segoe UI", sans-serif`;
     g.textBaseline = 'middle';
 
+    const controls = view && view.controls;
+    let bx = cx, by = cy;
     if (pl.alive) {
-      // Pitch ladder (cockpit + chase): rotated with bank
+      // Gun boresight = where the nose points (not the screen centre: mouse aim
+      // and free look move the camera away from the nose).
+      _v.copy(fl.position).addScaledVector(fl.getForward(_v2), 1500);
+      const bs = this.project(camera, _v);
+      if (bs.on) { bx = bs.x; by = bs.y; }
+      // Pitch ladder: rotated with bank, centred on the boresight
       const fovRad = (camera.fov * Math.PI) / 180;
       const pxPerRad = H / 2 / Math.tan(fovRad / 2);
       const fwd = fl.getForward(_v);
       const pitch = Math.asin(Math.max(-1, Math.min(1, fwd.y)));
       const bank = fl.getBank();
       g.save();
-      g.translate(cx, cy);
+      g.translate(bx, by);
       g.rotate(-bank);
       g.strokeStyle = CYAN_DIM;
       g.fillStyle = CYAN_DIM;
@@ -81,17 +89,55 @@ export class HudOverlay {
       g.setLineDash([]);
       g.restore();
 
-      // Boresight
+      // Boresight (gun cross)
       g.strokeStyle = CYAN;
       g.beginPath();
       const b = 10 * scale;
-      g.moveTo(cx - b * 2.2, cy); g.lineTo(cx - b, cy);
-      g.moveTo(cx + b, cy); g.lineTo(cx + b * 2.2, cy);
-      g.moveTo(cx, cy - b * 2); g.lineTo(cx, cy - b);
+      g.moveTo(bx - b * 2.2, by); g.lineTo(bx - b, by);
+      g.moveTo(bx + b, by); g.lineTo(bx + b * 2.2, by);
+      g.moveTo(bx, by - b * 2); g.lineTo(bx, by - b);
       g.stroke();
       g.beginPath();
-      g.arc(cx, cy, 2 * scale, 0, Math.PI * 2);
+      g.arc(bx, by, 2 * scale, 0, Math.PI * 2);
       g.stroke();
+
+      // Mouse-aim reticle: white ring with gap ticks, distinct from the gun cross
+      if (controls && controls.mode === 'mouseAim' && controls.captured) {
+        _v.copy(fl.position).addScaledVector(controls.aimDir, 1500);
+        const ap = this.project(camera, _v);
+        if (ap.on) {
+          const r = 16 * scale;
+          g.strokeStyle = 'rgba(255,255,255,0.9)';
+          g.lineWidth = 2 * scale;
+          for (let i = 0; i < 4; i++) {
+            const a0 = (i * Math.PI) / 2 + 0.25;
+            g.beginPath();
+            g.arc(ap.x, ap.y, r, a0, a0 + Math.PI / 2 - 0.5);
+            g.stroke();
+          }
+          g.fillStyle = 'rgba(255,255,255,0.9)';
+          g.beginPath();
+          g.arc(ap.x, ap.y, 1.8 * scale, 0, Math.PI * 2);
+          g.fill();
+          // tether from nose to aim while the aircraft catches up
+          const dd = Math.hypot(ap.x - bx, ap.y - by);
+          if (dd > r * 1.5) {
+            g.setLineDash([4 * scale, 6 * scale]);
+            g.strokeStyle = 'rgba(255,255,255,0.35)';
+            g.lineWidth = 1 * scale;
+            g.beginPath();
+            g.moveTo(bx, by);
+            g.lineTo(ap.x, ap.y);
+            g.stroke();
+            g.setLineDash([]);
+          }
+        }
+      }
+      if (controls && controls.mode === 'freeLook' && (controls.look.yaw !== 0 || controls.look.pitch !== 0)) {
+        g.fillStyle = CYAN_DIM;
+        g.textAlign = 'center';
+        g.fillText('FREE LOOK', cx, H * 0.16);
+      }
 
       // Flight-path marker
       _v.copy(fl.position).addScaledVector(fl.velocity, 4);

@@ -19,7 +19,9 @@
           <div class="hud-chip"><span class="lbl">SCORE</span><b id="h-score">0</b></div>
           <div class="hud-chip"><span class="lbl">KILLS</span><b id="h-kills">0</b></div>
           <div class="hud-chip"><span class="lbl">적기</span><b id="h-left">0</b></div>
+          <div class="hud-chip mode"><span class="lbl">조작</span><b id="h-mode">마우스 조준</b></div>
         </div>
+        <div id="h-capture" class="hud-capture hidden">화면을 클릭하면 마우스 조작이 시작됩니다 <small>(이 클릭은 발사되지 않음)</small></div>
         <div class="hud-heading"><div id="h-heading-tape"></div><b id="h-heading">000</b></div>
         <div class="tape tape-left">
           <span class="lbl">SPD km/h</span><b id="h-speed">0</b>
@@ -98,8 +100,21 @@
 
       <section id="screen-controls" class="screen">
         <div class="card">
-          <div class="eyebrow">조작법</div>
-          <h2 id="controls-title">키보드</h2>
+          <div class="eyebrow">조작 설정 · CONTROLS</div>
+          <h2>조작 모드</h2>
+          <div class="mode-row" role="radiogroup" aria-label="조작 모드">
+            <button class="mbtn mode-btn" data-action="mode" data-mode="mouseAim" role="radio">마우스 조준<small>추천 · 마우스가 시점/조준, 기체가 따라감</small></button>
+            <button class="mbtn mode-btn" data-action="mode" data-mode="classic" role="radio">키보드 클래식<small>WASD/방향키 조종 · 추적 카메라</small></button>
+            <button class="mbtn mode-btn" data-action="mode" data-mode="freeLook" role="radio">자유 시점<small>WASD 조종 · 마우스는 시점만 회전</small></button>
+          </div>
+          <div class="settings-row">
+            <label for="sens">마우스 감도 <b id="sens-val">1.00</b></label>
+            <input id="sens" type="range" min="0.2" max="3" step="0.05" value="1" />
+          </div>
+          <div class="settings-row">
+            <label for="invert"><input id="invert" type="checkbox" /> Y축 반전 (마우스 위 = 기수 내림)</label>
+          </div>
+          <h3 id="controls-title">키보드 + 마우스</h3>
           <table class="keys" id="controls-table"></table>
           <div class="menu row"><button class="mbtn primary" data-action="back">뒤로</button></div>
         </div>
@@ -121,6 +136,7 @@
           <div class="menu">
             <button class="mbtn primary" data-action="resume">계속</button>
             <button class="mbtn" data-action="restart">재시작</button>
+            <button class="mbtn" data-action="controls" id="pause-controls">조작 설정</button>
             <button class="mbtn" data-action="audio" data-audio>사운드: 켜짐</button>
             <button class="mbtn" data-action="quit">타이틀로</button>
           </div>

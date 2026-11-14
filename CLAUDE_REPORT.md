@@ -1,6 +1,81 @@
 # CLAUDE_REPORT — t1 (Claude Code, Opus 5.5), sole writer
 
-## Status: MVP verified playable (2026-11-14). Idle until user feedback.
+## Status: control presets implemented, awaiting browser verification (2026-11-14)
+
+The MVP was committed and pushed by the orchestrator as `b45541a` on `origin/main` and `feature/flight-combat`. This change is **not committed**: the orchestrator commits and pushes after verifying it in a browser.
+
+### Control presets: three desktop presets (mouse aim is the default)
+- **New file `src/engine/controls.js`.** It is pure, with no DOM, and contains:
+  - `ControlScheme`, which handles the mode logic, the persistent world-space aim, free-look offsets, wheel zoom, capture state, and the absolute-cursor fallback that uses position changes only.
+  - `MouseButtons`: left is held, right and middle are single presses.
+  - `applyWheel`, which is bounded to 0.6–2.2×.
+  - `sanitizeSettings`, `MODES`, `MODE_LABELS` and `DEFAULT_SETTINGS`.
+- **`src/simulation.js`**:
+  - Canvas-only pointer, wheel, contextmenu and auxclick listeners, active only during play.
+  - Pointer lock is requested on the first real click. A denial falls back gracefully.
+  - Losing the lock, or the window losing focus, pauses the game and clears fire.
+  - Camera poses come from the scheme.
+  - Telemetry gains `controlMode`, `controlLabel`, `mouseCaptured`, `pointerLocked` and `cameraZoom`.
+- **`src/engine/input.js`**: `isFormField()` lets settings controls keep their native keys. `hasStick()` lets a gamepad or touch stick override mouse aim.
+- **`src/engine/hud.js`**: the gun cross is drawn at the projected nose, not the screen centre. The mouse-aim ring is white, with a tether line back to the nose. A FREE LOOK tag is shown when the view is rotated.
+- **`index.html`, `src/main.js`, `src/style.css`**:
+  - Controls screen with three mode buttons, a sensitivity slider and a Y-invert checkbox. Settings are saved to localStorage under `skyward.controls`.
+  - Mapping tables for each preset (keyboard + mouse), plus gamepad and touch tables.
+  - Pause menu gains a 조작 설정 button; back returns to the PAUSED screen.
+  - HUD mode chip, and a capture hint saying the first click does not fire.
+  - Menu navigation ignores form fields. The context menu is suppressed only on the game canvas.
+
+**Browser verification hooks.** These live on `window.__skyward`, the `FlightSimulation` instance:
+- `getDebugState()` returns: `mode`, `settings`, `captured`, `pointerLocked`, `zoom`, `aimDir`, `look`, `heading`, `forward`, `camera`, `cameraForward`, `cameraDistance`, `fireHeld`, `lastControls`.
+- `setControlSettings({mode, sensitivity, invertY})` and `getControlSettings()`.
+- `mouseMove(dx, dy)`, `mouseButton(button, down)` (returns `'capture'`, `'ok'` or `'ignored'`) and `mouseWheel(deltaY)`. These take the same paths as the DOM events.
+- `isActivePlay()`.
+
+**Tests.** `tests/controls.test.js` adds 22 tests, for 45 in total, all passing:
+- settings sanitising
+- left button held vs right/middle single presses, and clear
+- the capture click never fires; classic needs no capture
+- wheel zoom bounds and its effect on camera distance
+- mouse aim:
+  - moving right turns the camera at once, then the heading by more than 25°
+  - **convergence, then a stable heading with no input (under 2° drift over 6 s)**
+  - mouse up climbs, and Y-invert flips it
+  - sensitivity scaling and the bounded offset from the nose
+  - **the fallback held at an off-centre cursor stays stable**
+  - keyboard roll override, and a stick override that re-syncs the aim
+- free look:
+  - moves only the camera, while the controls stay zero and the heading holds
+  - the keyboard still flies the aircraft
+  - yaw is bounded, and the view recentres
+- classic passes input straight through and ignores the mouse
+- mode switch and release clear held fire, presses and mouse delta
+- `isFormField`
+
+`vite build` succeeds.
+
+**Independent verification: COMPLETE PASS.** The orchestrator t4 ran the built dist on port 7622 in headless system Chrome 146:
+- **Settings UI:**
+  - all three presets can be selected from the real UI
+  - native slider arrow keys work
+  - Y-invert toggles and is saved
+  - the chosen preset survives a page reload
+- **Free look:** changes the view but not the heading.
+- **Mouse buttons:**
+  - left held fires the cannon continuously
+  - right fires one missile per press
+  - middle cycles the target
+  - the wheel zooms the chase camera
+- **Mouse aim:** turns the heading toward the view direction.
+- **Pause and resume:** pause clears the mouse capture and fire, and resume leaves no stuck fire.
+- **Pointer lock denied:** the fallback works, and a stationary cursor keeps the aim stable.
+- **Errors:** no console errors.
+- **`pch check dist`:** passed (exit 0), loaded in 335 ms, ran at 60 fps.
+
+Artifacts:
+- `C:/Users/Kevin/AppData/Local/Temp/skyward-control-settings.png`
+- `C:/Users/Kevin/AppData/Local/Temp/skyward-mouse-controls.png`
+
+**Not verified:** play with a real controller. The gamepad Confirm path in the menus (checkbox toggles, slider does nothing) was only code-reviewed.
 
 ### Final verification (orchestrator t4, real browser on the built dist)
 - Gameplay screenshot `C:/Users/Kevin/AppData/Local/Temp/skyward-final-gameplay.png`: chase view from behind the tail, the jet flying forward over the textured islands, ocean and HDRI sky, and the HUD rendered.

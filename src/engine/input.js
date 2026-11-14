@@ -18,6 +18,13 @@ const BUTTON_KEYS = {
   KeyP: 'pause', Escape: 'pause',
 };
 
+/** Form controls keep their native keyboard behaviour (no gameplay / menu capture). */
+export function isFormField(el) {
+  if (!el || !el.tagName) return false;
+  const tag = el.tagName.toLowerCase();
+  return tag === 'input' || tag === 'select' || tag === 'textarea' || !!el.isContentEditable;
+}
+
 /** Radial deadzone (0.15) with rescale to 0..1, per Patch controller guidance. */
 export function applyDeadzone(x, y, dz = 0.15) {
   const m = Math.hypot(x, y);
@@ -37,6 +44,7 @@ export class InputManager {
     this.device = 'keyboard';
     this.padState = { pitch: 0, roll: 0, yaw: 0, fire: false, boost: false };
     this.onKeyDown = (e) => {
+      if (isFormField(e.target)) return; // sliders/selects/checkboxes keep native keys
       if (e.repeat) { if (KEYMAP[e.code] || BUTTON_KEYS[e.code]) e.preventDefault(); return; }
       const btn = BUTTON_KEYS[e.code];
       if (KEYMAP[e.code] || btn) e.preventDefault();
@@ -118,6 +126,12 @@ export class InputManager {
   button(name) {
     for (const [code, act] of Object.entries(BUTTON_KEYS)) if (act === name && this.keys.has(code)) return true;
     return this.buttons[name] || this.padState[name];
+  }
+
+  /** True while a gamepad or touch stick is deflected (overrides mouse aim). */
+  hasStick() {
+    const a = this.analog, p = this.padState;
+    return Math.abs(a.pitch) + Math.abs(a.roll) + Math.abs(a.yaw) + Math.abs(p.pitch) + Math.abs(p.roll) + Math.abs(p.yaw) > 0.05;
   }
 
   takePresses() {

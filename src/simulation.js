@@ -10,7 +10,8 @@ import { InputManager } from './engine/input.js';
 import { HudOverlay } from './engine/hud.js';
 import { createTerrain, createOcean, createClouds, Particles, Tracers, radialTexture, normaliseAircraft, NOSE, tintClone, loadMaterialSet } from './engine/render.js';
 import { damp, clamp, createRng } from './engine/util.js';
-import { chaseTarget, chaseLookAt, lookRotation } from './engine/camera.js';
+import { lookRotation } from './engine/camera.js';
+import { ControlScheme, DEFAULT_SETTINGS, MODE_LABELS } from './engine/controls.js';
 import { ISLANDS } from './engine/terrain.js';
 
 const FIXED_DT = 1 / 60;
@@ -53,6 +54,7 @@ export class FlightSimulation {
     this.rng = createRng(4242);
     this.checks = new Set();
     this.entityViews = new Map();
+    this.controls = new ControlScheme(options.controlSettings || DEFAULT_SETTINGS);
 
     this._setupRenderer();
     this._setupScene();
@@ -71,6 +73,7 @@ export class FlightSimulation {
       this._onQuality = () => this.setQuality(readQuality());
       window.patch.addEventListener('qualitychange', this._onQuality);
     }
+    this._setupMouse();
     this._resize();
     this._loop = this._loop.bind(this);
     this.assetsReady = this._loadAssets();
@@ -86,6 +89,8 @@ export class FlightSimulation {
     this.running = true;
     this.paused = false;
     this.input.clear();
+    this.controls.release();
+    this.controls.zoom = 1;
     this.lastTime = performance.now();
     this.accum = 0;
     this.audio?.startEngine?.();
@@ -96,6 +101,7 @@ export class FlightSimulation {
     if (!this.running || this.paused) return;
     this.paused = true;
     this.input.clear();
+    this._releaseMouse();
     this.audio?.setPaused?.(true);
     this.emitEvent('paused');
   }
@@ -118,6 +124,129 @@ export class FlightSimulation {
     this.input.set(action, value);
   }
 
+  // --------------------------------------------------------- control presets
+  /** Apply {mode, sensitivity, invertY}; clears held keys/buttons and mouse delta. */
+  setControlSettings(s) {
+    const prev = this.controls.mode;
+    const out = this.controls.setSettings(s);
+    this.input.clear();
+    if (prev !== out.mode) this._releaseMouse();
+    this.emitEvent('controlsChanged', { ...out });
+    return out;
+  }
+
+  getControlSettings() {
+    return { ...this.controls.settings };
+  }
+
+  /** True while gameplay accepts weapon/mouse input. */
+  isActivePlay() {
+    return this.running && !this.paused && this.core.status === 'playing';
+  }
+
+  /** Same paths the DOM listeners use; exposed for browser verification. */
+  mouseMove(dx, dy) {
+    if (this.isActivePlay()) this.controls.mouseMove(dx, dy);
+  }
+  mouseButton(button, down) {
+    if (!down) { this.controls.mouseUp(button); return 'ok'; }
+    if (!this.isActivePlay()) return 'ignored';
+    const r = this.controls.mouseDown(button);
+    if (r === 'capture') this._captureMouse();
+    return r;
+  }
+  mouseWheel(deltaY) {
+    if (this.isActivePlay()) return this.controls.wheel(deltaY);
+    return this.controls.zoom;
+  }
+
+  getDebugState() {
+    const fl = this.core.player.flight;
+    const c = this.controls;
+    return {
+      mode: c.mode,
+      settings: { ...c.settings },
+      captured: c.captured,
+      pointerLocked: c.pointerLocked,
+      zoom: c.zoom,
+      aimDir: c.aimDir.toArray(),
+      look: { ...c.look },
+      heading: fl.getHeading(),
+      forward: fl.getForward(new THREE.Vector3()).toArray(),
+      camera: this.camera.position.toArray(),
+      cameraForward: this.camera.getWorldDirection(new THREE.Vector3()).toArray(),
+      cameraDistance: this.camera.position.distanceTo(fl.position),
+      fireHeld: c.buttons.fire,
+      lastControls: this._lastCtl ? { ...this._lastCtl } : null,
+    };
+  }
+
+  _setupMouse() {
+    const cv = this.canvas;
+    const isMouse = (e) => !e.pointerType || e.pointerType === 'mouse';
+    this._onPointerDown = (e) => {
+      if (!isMouse(e) || !this.isActivePlay()) return;
+      if (e.button === 1 || e.button === 2) e.preventDefault(); // no autoscroll / menu in play
+      this.mouseButton(e.button, true);
+    };
+    this._onPointerUp = (e) => { if (isMouse(e)) this.controls.mouseUp(e.button); };
+    this._onMouseMove = (e) => {
+      if (!this.isActivePlay()) return;
+      if (this.controls.pointerLocked) this.controls.mouseMove(e.movementX || 0, e.movementY || 0);
+      else this.controls.cursorMove(e.clientX, e.clientY); // lock denied: absolute-position deltas
+    };
+    this._onWheel = (e) => {
+      if (!this.isActivePlay()) return;
+      e.preventDefault();
+      this.controls.wheel(e.deltaY);
+    };
+    this._onContext = (e) => { if (this.isActivePlay()) e.preventDefault(); };
+    this._onAux = (e) => { if (this.isActivePlay() && e.button === 1) e.preventDefault(); };
+    this._onLockChange = () => {
+      const locked = document.pointerLockElement === cv;
+      if (locked) this.controls.setCaptured(true);
+      else if (this.controls.pointerLocked) {
+        this.controls.release();
+        if (this.isActivePlay()) this.emitEvent('pauseRequested', { reason: 'pointerunlock' });
+      }
+    };
+    this._onLockError = () => {
+      // lock denied: fall back to plain mouse deltas without lock
+      if (this._wantLock) this.controls.setCaptured(false);
+      this._wantLock = false;
+    };
+    cv.addEventListener('pointerdown', this._onPointerDown);
+    window.addEventListener('pointerup', this._onPointerUp);
+    document.addEventListener('mousemove', this._onMouseMove);
+    cv.addEventListener('wheel', this._onWheel, { passive: false });
+    cv.addEventListener('contextmenu', this._onContext);
+    cv.addEventListener('auxclick', this._onAux);
+    document.addEventListener('pointerlockchange', this._onLockChange);
+    document.addEventListener('pointerlockerror', this._onLockError);
+  }
+
+  _captureMouse() {
+    if (this.testMode) return; // never auto-lock under Patch's test
+    this._wantLock = true;
+    const cv = this.canvas;
+    try {
+      const p = cv.requestPointerLock ? cv.requestPointerLock() : null;
+      if (p && typeof p.then === 'function') {
+        p.then(() => { this._wantLock = false; }).catch(() => this._onLockError());
+      } else if (!cv.requestPointerLock) this._onLockError();
+    } catch {
+      this._onLockError();
+    }
+  }
+
+  _releaseMouse() {
+    this.controls.release();
+    this._wantLock = false;
+    if (document.pointerLockElement === this.canvas) {
+      try { document.exitPointerLock(); } catch { /* ignore */ }
+    }
+  }
+
   setQuality(q) {
     this.quality = q;
     this._resize();
@@ -133,6 +262,16 @@ export class FlightSimulation {
     document.removeEventListener('visibilitychange', this._onVis);
     if (this._onQuality) window.patch.removeEventListener('qualitychange', this._onQuality);
     this._ro?.disconnect();
+    const cv = this.canvas;
+    cv.removeEventListener('pointerdown', this._onPointerDown);
+    window.removeEventListener('pointerup', this._onPointerUp);
+    document.removeEventListener('mousemove', this._onMouseMove);
+    cv.removeEventListener('wheel', this._onWheel);
+    cv.removeEventListener('contextmenu', this._onContext);
+    cv.removeEventListener('auxclick', this._onAux);
+    document.removeEventListener('pointerlockchange', this._onLockChange);
+    document.removeEventListener('pointerlockerror', this._onLockError);
+    this._releaseMouse();
     this.input.dispose();
     this.hud.dispose();
     this.audio?.stopEngine?.();
@@ -586,6 +725,9 @@ export class FlightSimulation {
 
     this.input.pollGamepad();
     const presses = this.input.takePresses();
+    // mouse edges (RIGHT = missile, MIDDLE = next target) only count during active play
+    const mouseEdges = this.controls.buttons.take();
+    if (this.isActivePlay()) presses.push(...mouseEdges);
     for (const p of presses) {
       if (p === 'pause') {
         this.emitEvent('pauseRequested', { reason: 'key' });
@@ -598,13 +740,21 @@ export class FlightSimulation {
 
     const active = this.running && !this.paused && core.status === 'playing';
     if (active) {
-      let ctl = {
+      const manual = {
         pitch: this.input.axis('pitch'),
         roll: this.input.axis('roll'),
         yaw: this.input.axis('yaw'),
-        boost: this.input.button('boost'),
-        fire: this.input.button('fire'),
+        stick: this.input.hasStick(),
       };
+      const stick = this.controls.update(rawDt, core.player.flight, manual);
+      let ctl = {
+        pitch: stick.pitch,
+        roll: stick.roll,
+        yaw: stick.yaw,
+        boost: this.input.button('boost'),
+        fire: this.input.button('fire') || this.controls.buttons.fire,
+      };
+      this._lastCtl = ctl;
       if (this.testMode) {
         if (!this.input.anyKeyHeld()) ctl = this._autopilot() || ctl;
         else { ctl.pitch *= 0.35; ctl.roll *= 0.35; } // Patch's held move keys: visible motion, no forced crash
@@ -646,6 +796,11 @@ export class FlightSimulation {
       t.camera = ['chase', 'cockpit', 'far'][this.cameraMode];
       t.inputDevice = this.input.device;
       t.paused = this.paused;
+      t.controlMode = this.controls.mode;
+      t.controlLabel = MODE_LABELS[this.controls.mode];
+      t.mouseCaptured = this.controls.captured;
+      t.pointerLocked = this.controls.pointerLocked;
+      t.cameraZoom = Math.round(this.controls.zoom * 100) / 100;
       this.onTelemetry(t);
     }
     // test mode: restart automatically after game over so checks can continue
@@ -685,18 +840,19 @@ export class FlightSimulation {
       cam.quaternion.copy(fl.quaternion);
     } else {
       const far = this.cameraMode === 2;
-      const back = far ? 60 : 30;
-      const high = far ? 14 : 7.5;
-      chaseTarget(fl, back, high, cs.desired);
+      const base = { back: far ? 60 : 30, high: far ? 14 : 7.5, ahead: 60 };
+      if (!cs.pose) cs.pose = { pos: new THREE.Vector3(), look: new THREE.Vector3(), up: new THREE.Vector3() };
+      this.controls.cameraPose(fl, base, cs.pose);
+      cs.desired.copy(cs.pose.pos);
+      const back = base.back * this.controls.zoom;
       // snap if we are far away (start, restart, camera switch); otherwise smooth follow
       if (cam.position.distanceTo(fl.position) > back * 6) cam.position.copy(cs.desired);
       else cam.position.lerp(cs.desired, damp(far ? 5 : 8, dt));
       // keep a sane distance band so the camera never clips into the jet or drifts away
       const dist = cam.position.distanceTo(fl.position);
       if (dist < back * 0.7 || dist > back * 2.5) cam.position.sub(fl.position).setLength(Math.min(Math.max(dist, back * 0.7), back * 2.5)).add(fl.position);
-      chaseLookAt(fl, 60, cs.look);
-      fl.getUp(cs.up);
-      cam.up.lerp(cs.up, damp(5, dt)).normalize();
+      cs.look.copy(cs.pose.look);
+      cam.up.lerp(cs.pose.up, damp(5, dt)).normalize();
       lookRotation(cam.position, cs.look, cam.up, cs.q);
       cam.quaternion.slerp(cs.q, damp(10, dt));
     }

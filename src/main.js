@@ -2,13 +2,23 @@
 // radar, touch controls, best score and audio toggle.
 import { FlightSimulation } from './simulation.js';
 import { GameAudio } from './audio.js';
-import { applyDeadzone } from './engine/input.js';
+import { applyDeadzone, isFormField } from './engine/input.js';
+import { MODE_LABELS, sanitizeSettings, DEFAULT_SETTINGS } from './engine/controls.js';
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => Array.from(document.querySelectorAll(s));
 const params = new URLSearchParams(location.search);
 const TEST = params.get('patch-test') === '1';
 const BEST_KEY = 'skyward.best';
+const CONTROLS_KEY = 'skyward.controls';
+
+function loadControlSettings() {
+  try { return sanitizeSettings(JSON.parse(localStorage.getItem(CONTROLS_KEY) || 'null') || DEFAULT_SETTINGS); } catch { return sanitizeSettings(DEFAULT_SETTINGS); }
+}
+function saveControlSettings(s) {
+  try { localStorage.setItem(CONTROLS_KEY, JSON.stringify(s)); } catch { /* storage blocked */ }
+}
+let controlSettings = loadControlSettings();
 
 const audio = new GameAudio();
 let best = 0;
@@ -20,7 +30,7 @@ let lastTelemetry = null;
 let device = 'keyboard';
 let hudChecked = false;
 
-const sim = new FlightSimulation($('#game'), onTelemetry, { audio, testMode: TEST });
+const sim = new FlightSimulation($('#game'), onTelemetry, { audio, testMode: TEST, controlSettings });
 window.__skyward = sim; // debugging handle
 
 // ------------------------------------------------------------------ screens
@@ -64,6 +74,7 @@ function act(action) {
     case 'restart': startGame(); break;
     case 'quit': quit(); break;
     case 'audio': audio.setEnabled(!audio.enabled); syncAudioLabels(); break;
+    case 'mode': break; // handled by the mode buttons' own listener
     default: break;
   }
 }
@@ -109,6 +120,9 @@ $('#btn-pause').addEventListener('click', () => pauseGame());
 document.addEventListener('keydown', (e) => {
   audio.ensure();
   if (screen === 'play') return;
+  // sliders / checkboxes keep their native arrow & space behaviour; only P / Back stay global
+  if (isFormField(e.target) && e.code !== 'KeyP' && e.code !== 'Backspace') return;
+  if (e.code === 'Backspace' && screen !== 'title') { e.preventDefault(); menuNav('Back'); return; }
   if (e.code === 'KeyP' && screen === 'pause') { resumeGame(); return; }
   menuNav(e.code);
 });
@@ -116,12 +130,17 @@ document.addEventListener('keydown', (e) => {
 function menuNav(code) {
   const s = document.querySelector('.screen.active');
   if (!s) return;
-  const items = Array.from(s.querySelectorAll('.mbtn'));
+  const items = Array.from(s.querySelectorAll('.mbtn, input'));
   const i = items.indexOf(document.activeElement);
   if (code === 'ArrowDown' || code === 'ArrowRight' || code === 'KeyS') { items[(i + 1 + items.length) % items.length]?.focus(); }
   else if (code === 'ArrowUp' || code === 'ArrowLeft' || code === 'KeyW') { items[(i - 1 + items.length) % items.length]?.focus(); }
   else if (code === 'Back') { if (screen === 'pause') resumeGame(); else if (screen !== 'title') back(); }
-  else if (code === 'Confirm') { (document.activeElement?.closest('.mbtn') || items[0])?.click(); }
+  else if (code === 'Confirm') {
+    const ae = document.activeElement;
+    if (ae && ae.type === 'checkbox') ae.click(); // toggles and fires its change event
+    else if (ae && ae.type === 'range') { /* adjusted with d-pad left/right; confirm does nothing */ }
+    else (ae?.closest('.mbtn') || items[0])?.click();
+  }
 }
 
 // ------------------------------------------------------------ menu gamepad
@@ -145,6 +164,11 @@ function pollMenuPad() {
       if (pressed(9) && screen === 'pause') resumeGame();
       if (pressed(12)) menuNav('ArrowUp');
       if (pressed(13)) menuNav('ArrowDown');
+      const ae = document.activeElement;
+      if (ae && ae.type === 'range' && (pressed(14) || pressed(15))) {
+        ae.value = String(Number(ae.value) + (pressed(15) ? 1 : -1) * Number(ae.step || 0.05));
+        ae.dispatchEvent(new Event('input', { bubbles: true }));
+      }
       const [, ly] = applyDeadzone(pad.axes[0] || 0, pad.axes[1] || 0, 0.5);
       if (ly !== 0 && axisLatch === 0) menuNav(ly > 0 ? 'ArrowDown' : 'ArrowUp');
       axisLatch = ly === 0 ? 0 : 1;
@@ -165,26 +189,64 @@ function setDevice(d) {
 window.addEventListener('keydown', () => setDevice('keyboard'));
 window.addEventListener('pointerdown', (e) => setDevice(e.pointerType === 'touch' ? 'touch' : 'keyboard'));
 
+const MOUSE_ROWS = [
+  ['마우스 왼쪽 (누르고 있기)', '기관포 연사'], ['마우스 오른쪽', '미사일 1발 (락온 시 유도)'],
+  ['마우스 가운데 클릭', '다음 적 타깃'], ['마우스 휠', '추적 카메라 거리 (줌)'],
+];
+const KEY_ROWS = {
+  mouseAim: [
+    ['마우스 이동', '조준/시점 방향 — 기체가 조준점을 따라 선회'], ...MOUSE_ROWS,
+    ['A D / ← →', '롤 보조'], ['Q / E', '요 보조'], ['W S / ↑ ↓', '피치 직접 입력 (선택)'],
+    ['Shift', '부스트'], ['Space', '기관포'], ['M / F', '미사일'], ['T / R', '타깃 전환'], ['C', '카메라 전환'], ['P', '일시정지'],
+  ],
+  classic: [
+    ['W / ↑', '기수 내림'], ['S / ↓', '기수 올림'], ['A D / ← →', '롤 (자동 선회 보조)'], ['Q / E', '요'],
+    ['Shift', '부스트'], ['Space', '기관포'], ['M / F', '미사일 (락온 시 유도)'], ['T / R', '타깃 전환'],
+    ['C', '카메라 전환'], ['P', '일시정지'], ...MOUSE_ROWS,
+  ],
+  freeLook: [
+    ['마우스 이동', '시점만 회전 (기체 방향은 변하지 않음, 2.5초 후 자동 복귀)'], ...MOUSE_ROWS,
+    ['W / ↑ · S / ↓', '기수 내림 · 올림'], ['A D / ← →', '롤'], ['Q / E', '요'],
+    ['Shift', '부스트'], ['Space', '기관포'], ['M / F', '미사일'], ['T / R', '타깃 전환'], ['C', '카메라 전환'], ['P', '일시정지'],
+  ],
+};
+const PAD_ROWS = [
+  ['왼쪽 스틱', '피치 / 롤'], ['오른쪽 스틱 ↔', '요'], ['오른쪽 트리거', '기관포'], ['왼쪽 트리거', '부스트'],
+  ['하단 버튼 / 왼쪽 숄더', '미사일'], ['오른쪽 숄더 / 오른쪽 버튼', '타깃 전환'], ['상단 버튼', '카메라 전환'], ['스타트', '일시정지'],
+];
+const TOUCH_ROWS = [
+  ['왼쪽 스틱', '피치 / 롤'], ['GUN', '기관포 (누르고 있기)'], ['MSL', '미사일'], ['BST', '부스트'],
+  ['TGT', '타깃 전환'], ['CAM', '카메라'], ['II', '일시정지'],
+];
+
 function renderControls() {
-  const rows = {
-    keyboard: [
-      ['W / ↑', '기수 내림'], ['S / ↓', '기수 올림'], ['A D / ← →', '롤 (자동 선회 보조)'], ['Q / E', '요'],
-      ['Shift', '부스트'], ['Space', '기관포'], ['M / F', '미사일 (락온 시 유도)'], ['T / R', '타깃 전환'],
-      ['C', '카메라 전환'], ['P', '일시정지'],
-    ],
-    gamepad: [
-      ['왼쪽 스틱', '피치 / 롤'], ['오른쪽 스틱 ↔', '요'], ['오른쪽 트리거', '기관포'], ['왼쪽 트리거', '부스트'],
-      ['하단 버튼 / 왼쪽 숄더', '미사일'], ['오른쪽 숄더 / 오른쪽 버튼', '타깃 전환'], ['상단 버튼', '카메라 전환'], ['스타트', '일시정지'],
-    ],
-    touch: [
-      ['왼쪽 스틱', '피치 / 롤'], ['GUN', '기관포 (누르고 있기)'], ['MSL', '미사일'], ['BST', '부스트'],
-      ['TGT', '타깃 전환'], ['CAM', '카메라'], ['II', '일시정지'],
-    ],
-  };
-  const d = rows[device] ? device : 'keyboard';
-  $('#controls-title').textContent = { keyboard: '키보드', gamepad: '컨트롤러', touch: '터치' }[d];
-  $('#controls-table').innerHTML = rows[d].map(([k, v]) => `<tr><td><kbd>${k}</kbd></td><td>${v}</td></tr>`).join('');
+  const mode = controlSettings.mode;
+  $$('.mode-btn').forEach((b) => {
+    const on = b.dataset.mode === mode;
+    b.classList.toggle('selected', on);
+    b.setAttribute('aria-checked', on ? 'true' : 'false');
+  });
+  $('#sens').value = String(controlSettings.sensitivity);
+  $('#sens-val').textContent = controlSettings.sensitivity.toFixed(2);
+  $('#invert').checked = controlSettings.invertY;
+  let rows, title;
+  if (device === 'gamepad') { rows = PAD_ROWS; title = '컨트롤러 (조작 모드와 무관)'; }
+  else if (device === 'touch') { rows = TOUCH_ROWS; title = '터치 (조작 모드와 무관)'; }
+  else { rows = KEY_ROWS[mode]; title = `키보드 + 마우스 — ${MODE_LABELS[mode]}`; }
+  $('#controls-title').textContent = title;
+  $('#controls-table').innerHTML = rows.map(([k, v]) => `<tr><td><kbd>${k}</kbd></td><td>${v}</td></tr>`).join('');
 }
+
+function applyControlSettings(patch) {
+  controlSettings = sim.setControlSettings({ ...controlSettings, ...patch });
+  saveControlSettings(controlSettings);
+  $('#h-mode').textContent = MODE_LABELS[controlSettings.mode];
+  renderControls();
+}
+
+$$('.mode-btn').forEach((b) => b.addEventListener('click', () => applyControlSettings({ mode: b.dataset.mode })));
+$('#sens').addEventListener('input', (e) => applyControlSettings({ sensitivity: Number(e.target.value) }));
+$('#invert').addEventListener('change', (e) => applyControlSettings({ invertY: e.target.checked }));
 
 // ---------------------------------------------------------------- credits
 fetch('./assets/patch/credits.json')
@@ -216,6 +278,8 @@ function onTelemetry(t) {
   el.score.textContent = t.score.toLocaleString();
   el.kills.textContent = t.kills;
   el.left.textContent = t.enemiesLeft;
+  if (t.controlLabel) $('#h-mode').textContent = t.controlLabel;
+  $('#h-capture').classList.toggle('hidden', !(t.controlMode !== 'classic' && !t.mouseCaptured && !t.paused && t.status === 'playing' && !isTouch() && device !== 'gamepad' && !TEST));
   el.speed.textContent = t.speed;
   el.alt.textContent = t.altitude;
   el.agl.textContent = `AGL ${t.agl}`;
@@ -373,11 +437,12 @@ function setupTouch() {
   }
 }
 setupTouch();
-document.addEventListener('contextmenu', (e) => { if (screen === 'play') e.preventDefault(); });
+// (context menu / middle-click autoscroll are suppressed on the game canvas only, by the engine, during active play)
 
 // -------------------------------------------------------------------- boot
 $('#best-score').textContent = best.toLocaleString();
 syncAudioLabels();
+$('#h-mode').textContent = MODE_LABELS[controlSettings.mode];
 document.body.dataset.device = device;
 show('title', false);
 if (TEST) {
